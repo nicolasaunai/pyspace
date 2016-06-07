@@ -31,18 +31,18 @@ def themis_dl(sc, instrument, l,date,dest_dir=None):
     file_name = fn #url.split('/')[-1]
 
     if os.path.isfile(file_name):
-        print 'file already exist in the directory'
+        print('file already exist in the directory')
         return None
 
 
-    print 'Downloading %s' % url
+    print("Downloading {}".format(url))
 
     u = murl.urlopen(url)
     f = open(file_name, 'wb')
     meta = u.info()
     file_size = int(meta.getheaders("Content-Length")[0])
 
-    print "Downloading: %s Bytes: %s" % (file_name, file_size)
+    print("Downloading: {} Bytes: {}".format(file_name, file_size))
 
     file_size_dl = 0
     block_sz = 8192
@@ -56,7 +56,7 @@ def themis_dl(sc, instrument, l,date,dest_dir=None):
         f.write(buffer)
         status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
         status = status + chr(8)*(len(status)+1)
-        print status,
+        print(status)
 
     f.close()
 #==========================================================
