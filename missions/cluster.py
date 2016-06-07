@@ -1,5 +1,5 @@
 
-
+import os
 import datetime as dtime
 import numpy as np
 import requests
@@ -8,9 +8,7 @@ import dateutil.parser
 import pandas as pd
 from scipy.constants import k as kB
 import spacepy.pycdf as pycdf
-
-
-
+import pyspace.missions.aio as _aio
 
 
 
@@ -48,10 +46,6 @@ def csa_orbit_url(date):
     return urltot
 
 
-
-
-
-
 def csa_orbit_img(date):
     """
     download an orbit image at the specified date
@@ -66,10 +60,6 @@ def csa_orbit_img(date):
     return 'orbit_%s.png' % (ymj)
 
 
-
-
-
-
 def GetHIA(filename):
 
     """
@@ -79,7 +69,7 @@ def GetHIA(filename):
     a specified CDF file.
     """
 
-    print filename
+    print(filename)
     fcdf        = pycdf.CDF(filename)
 
     n           = fcdf['density__C1_CP_CIS-HIA_ONBOARD_MOMENTS'][:].copy()
@@ -99,9 +89,6 @@ def GetHIA(filename):
     return data
 
 
-
-
-
 def GetFGM(filename):
 
     fcdf = pycdf.CDF(filename)
@@ -111,8 +98,6 @@ def GetFGM(filename):
     data = pd.DataFrame(data=B, index=t, columns=['B'])
     fcdf.close()
     return data
-
-
 
 def GetPitchAngle(filename):
 
@@ -127,6 +112,10 @@ def GetPitchAngle(filename):
 
     return (tpa, E, pitch, df)
 
+
+def get_PP_CIS(spacecraft,time,vars[])
+    ID=spacecraft+"_PP_CIS"
+    filename=_aio.get_product(ID,startdate,stopdate)
 
 
 
