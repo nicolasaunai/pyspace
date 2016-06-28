@@ -8,7 +8,7 @@ import json as _json
 import re as _re
 
 _AIO_CSACOOKIE=_cfg.get_value("AIO","CSACOOKIE")
-_products_list_file_name=_cfg.config_dir+"/aio_full_product_list.json"
+_products_list_file_name=_cfg.CONFIG_DIR+"/aio_full_product_list.json"
 _products_list=None
 
 def set_csacookie(cookie):
