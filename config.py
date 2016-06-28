@@ -13,6 +13,14 @@ _config = configparser.ConfigParser()
 _config.sections()
 _config.read(CONFIG_FILE)
 
+
+def config_file():
+    return CONFIG_FILE
+
+def config_dir():
+    return CONFIG_DIR
+
+
 def save_conf():
     configfile = open(CONFIG_FILE, 'wt')
     _config.write(configfile)
