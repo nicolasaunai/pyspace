@@ -10,6 +10,9 @@ import spacepy.time as mspt
 import spacepy.pycdf as pycdf
 import pandas as pd
 import numpy as np
+import numpy.ma as ma
+import spacepy.time as mspt
+
 
 
 
@@ -180,6 +183,150 @@ class FGM(object):
                              'Bz_' + coord: B[:, 2],
                              'B_' + coord: np.sqrt(B2)},
                             index=time)
+
+
+
+
+
+class Moments(object):
+    """
+    mode = ['esa', 'mom']
+    """
+
+    def __init__(self, filename, mode='esa'):
+        try:
+            self.filecdf = pycdf.CDF(filename)
+        except:
+            print(filename + ' does not exist')
+
+        splitFilename = filename.split('_')
+        self.sc = splitFilename[0]
+        self.level = splitFilename[1]
+        self.date = splitFilename[3]
+        self.cdfVersion = splitFilename[4]
+        if mode.lower() == 'esa':
+            self.temperature_name = '_magt3'
+        elif mode.lower() == 'mom':
+            self.temperature_name = '_t3_mag'
+
+
+    def time(self, resol, species):
+        time = self.filecdf[self.sc + '_pe' + species + resol + '_time'][:]
+        time = mspt.Ticktock(time, 'UNX').getUTC()
+        return time
+
+
+    def ion_time(self, resol):
+        return self.time(resol, 'i')
+
+
+    def electron_time(self, resol):
+        return self.time(resol, 'e')
+
+
+    def density(self, resol='r', species='i'):
+        """
+        resol = ['r' (reduced) , 'b' (burst), 'f' (full)]
+        """
+        n = self.filecdf[self.sc + '_pe' + species + resol + '_density'][:]
+        time = self.time(resol, species)
+        return pd.Series(data=n, index=time)
+
+
+    def ion_density(self, resol='r'):
+        """
+        resol = ['r' (reduced) , 'b' (burst), 'f' (full)]
+        """
+        return self.density(resol=resol)
+
+
+    def electron_density(self, resol='r'):
+        """
+        resol = ['r' (reduced) , 'b' (burst), 'f' (full)]
+        """
+        return self.density(resol=resol, species='e')
+
+    def temperature(self, resol, species):
+        T = self.filecdf[self.sc + '_pe' + species + resol + self.temperature_name][:]
+        time = self.time(resol, species)
+        return pd.DataFrame({'tpara': T[:, 2], 'tperp1': T[:, 1], 'tperp2': T[:, 0]}, index=time)
+
+
+    def ion_temperature(self, resol):
+        return self.temperature(resol, species='i')
+
+
+    def electron_temperature(self, resol):
+        return self.temperature(resol, species='e')
+
+
+    def bulkVelocity(self, resol, species, coord):
+        V = self.filecdf[self.sc + '_pe' + species + resol + '_velocity_' + coord][:]
+        time = self.time(resol, species)
+        name = 'V' + species + '_' + coord
+        V2 = V[:, 0] ** 2 + V[:, 1] ** 2 + V[:, 2] ** 2
+        return pd.DataFrame({name + '_x': V[:, 0],
+                             name + '_y': V[:, 1],
+                             name + '_z': V[:, 2],
+                             name + '_mod': np.sqrt(V2)}, index=time)
+
+
+    def ion_bulkVelocity(self, resol, coord):
+        return self.bulkVelocity(resol, 'i', coord)
+
+
+    def electron_bulkVelocity(self, resol, coord):
+        return self.bulkVelocity(resol, 'e', coord)
+
+
+    def quality(self, resol, species):
+        mode = self.sc + "_pe" + species + resol + "_data_quality"
+        q = self.filecdf[mode][:]
+        time = self.time(resol, species)
+        return pd.Series(q, index=time)
+
+
+
+
+
+class Spectrogram(object):
+
+    def __init__(self, filename):
+        try:
+            self.filecdf = pycdf.CDF(filename)
+        except:
+            print(filename + ' does not exist')
+
+        splitFilename = filename.split('_')
+        self.sc = splitFilename[0]
+        self.level = splitFilename[1]
+        self.date = splitFilename[3]
+        self.cdfVersion = splitFilename[4]
+
+
+    def spectrogram(self, species, resol):
+        spectro = self.filecdf[self.sc + '_pe' + species + resol + '_en_eflux'][:]
+        energy = self.filecdf[self.sc + '_pe' + species + resol + '_en_eflux_yaxis'][:]
+        t = self.filecdf[self.sc + '_pe' + species + resol + '_time'][:]
+
+        spectro = ma.masked_invalid(spectro)
+        energy = ma.masked_invalid(energy)
+        tt = np.ndarray((t.size, energy.shape[1]), dtype=np.object)
+        for i in range(energy.shape[1]):
+            tt[:, i] = mspt.Ticktock(t, 'UNX').getUTC()
+
+        return spectro, energy, tt
+
+
+    def ion_spectrogram(self, resol):
+        return self.spectrogram('i', resol)
+
+
+    def electron_spectrogram(self, resol):
+        return self.spectrogram('e', resol)
+
+
+
 
 
 
