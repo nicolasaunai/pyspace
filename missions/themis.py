@@ -83,6 +83,52 @@ def filename(scname, level, instrument, date):
 
 
 
+#-------------------------------------------------------------
+class STATE(object):
+
+    def __init__(self, filename):
+        try:
+            self.filecdf = pycdf.CDF(filename)
+        except:
+            print(filename + ' does not exist')
+
+        splitFilename = filename.split('_')
+        self.sc = splitFilename[0]
+        self.level = splitFilename[1]
+        self.date = splitFilename[3]
+        self.cdfVersion = splitFilename[4]
+
+
+
+    def time(self):
+        time = self.filecdf[self.sc + '_state_time'][:]
+        time = mspt.Ticktock(time, 'UNX').getUTC()
+        return time
+
+
+
+    def position(self, coord, earth_radius=True):
+        """
+        @param coord: gsm or gse
+        @param earth_radius: True, False. If true return the position
+        normalized by the Earth radius (6480km)
+        @return:
+        """
+        pos = self.filecdf[self.sc + '_pos_' + coord][:]
+        time = self.time()
+        if earth_radius is True:
+            Rt = 6480.  # km
+        else:
+            Rt = 1.
+        return pd.DataFrame({'X' + coord: pos[:, 0] / Rt,
+                             'Y' + coord: pos[:, 1] / Rt,
+                             'Z' + coord: pos[:, 2] / Rt},
+                            index=time)
+
+
+
+
+#-------------------------------------------------------------
 class FGM(object):
     """
     Fluxgate Magnetometer (FGM) data:
