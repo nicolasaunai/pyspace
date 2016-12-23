@@ -7,6 +7,9 @@ import urllib
 import os
 import datetime as mdt
 import spacepy.time as mspt
+import spacepy.pycdf as pycdf
+import pandas as pd
+import numpy as np
 
 
 
@@ -79,6 +82,58 @@ def filename(scname, level, instrument, date):
 
 
 
+
+class FGM(object):
+    """
+    Fluxgate Magnetometer (FGM) data:
+    The Level 2 file includes FGE (engineering) magnetic field,
+    FGH (high-resolution) magnetic field,
+    FGL (low-resolution) magnetic field,
+    and FGS (spin-resolution) magnetic field.
+    The FGH, FGL, and FGE data are given in Spinning Spacecraft (SSL),
+    Despun Spacecraft (DSL), Geocentric Solar Ecliptic (GSE) and Geocentric Solar Magnetospheric (GSM) coordinates.
+    The FGS data is given in DSL, GSE, and GSM coordinates. Units are nanotesla.
+    """
+    def __init__(self, filename):
+        try:
+            self.filecdf = pycdf.CDF(filename)
+        except:
+            print(filename + ' does not exist')
+
+
+        splitFilename = filename.split('_')
+        self.sc = splitFilename[0]
+        self.level = splitFilename[1]
+        self.date = splitFilename[3]
+        self.cdfVersion = splitFilename[4]
+
+
+
+    def time(self, resol, coord):
+        time = self.filecdf[self.sc + '_' + resol + '_time'][:]
+        time = mspt.Ticktock(time, 'UNX').getUTC()
+        return time
+
+
+
+    def magnetic(self, resol, coord):
+        """
+        @param resol: 'fgs' (spin), 'fge' (engineering), 'fgh' (high resolution), 'fgl' (low resolution)
+        @param coord: 'dsl', 'gse', 'gsm', 'ssl'
+        @return:
+        """
+        if resol.lower() == 'fgs' and coord.lower() == 'ssl':
+            raise NameError('fgs resolution has no ssl coordinate')
+
+
+        B = self.filecdf[self.sc + '_' + resol + '_' + coord][:, :]
+        time = self.time(resol, coord)
+        B2 = B[:, 0] ** 2 + B[:, 1] ** 2 + B[:, 2] ** 2
+        return pd.DataFrame({'Bx_' + coord: B[:, 0],
+                             'By_' + coord: B[:, 1],
+                             'Bz_' + coord: B[:, 2],
+                             'B_' + coord: np.sqrt(B2)},
+                            index=time)
 
 
 
