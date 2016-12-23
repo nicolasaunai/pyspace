@@ -7,16 +7,16 @@ import pyspace.config as _cfg
 import json as _json
 import re as _re
 
-__AIO__CSACOOKIE__=_cfg.get_value("AIO","CSACOOKIE")
-__products_list_file_name=_cfg.config_dir+"/aio_full_product_list.json"
-__products_list=None
+_AIO_CSACOOKIE=_cfg.get_value("AIO","CSACOOKIE")
+_products_list_file_name=_cfg.config_dir() + "/aio_full_product_list.json"
+_products_list=None
 
 def set_csacookie(cookie):
     _cfg.set_value("AIO","CSACOOKIE",cookie)
 
 def get_product(id,startdate,stopdate,format="CDF",force=False):
-    global  __AIO__CSACOOKIE__
-    filename = "file_%s_%s-%s.tar" % (id,startdate,stopdate)
+    global  _AIO_CSACOOKIE
+    filename = "file_{id}_{startdate}-{stopdate}.tar".format(id=id,startdate=startdate,stopdate=stopdate)
     if not os.path.exists(filename) or force:
         if hasattr(startdate, 'strftime'):
             start=startdate.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -27,32 +27,37 @@ def get_product(id,startdate,stopdate,format="CDF",force=False):
         else:
             stop=stopdate
         url = "https://csa.esac.esa.int/csa/aio/product-action?"
-        dsid = "DATASET_ID=%s&" % (id)
-        sdate = "START_DATE=%s&" % (start)
-        edate = "END_DATE=%s&" % (stop)
+        dsid = "DATASET_ID={}&".format(id)
+        sdate = "START_DATE={}&".format(start)
+        edate = "END_DATE={}&".format(stop)
         deliv = "DELIVERY_INTERVAL=All&"
-        delivForm = "DELIVERY_FORMAT=%s&"%(format)
+        delivForm = "DELIVERY_FORMAT={}&".format(format)
         NB  ="NON_BROWSER&"
-        CSACOOKIE="CSACOOKIE=%s"%(__AIO__CSACOOKIE__)
+        CSACOOKIE="CSACOOKIE={}".format(_AIO_CSACOOKIE)
         urltot = url+dsid+sdate+edate+NB+deliv+delivForm+NB+CSACOOKIE
         print(urltot)
         p = urllib.request.urlretrieve (urltot, filename)
         return filename
 
-def __load_product_list():
-    global __products_list_file_name
-    global __products_list
-    if not os.path.exists(__products_list_file_name):
+def _load_product_list():
+    global _products_list_file_name
+    global _products_list
+    if not os.path.exists(_products_list_file_name):
         url="https://csa.esac.esa.int/csa/aio/metadata-action?PAGE_SIZE=10000&PAGE=1&SELECTED_FIELDS=MISSION.NAME,INSTRUMENT.NAME,DATASET.DATASET_ID,DATASET.START_DATE,DATASET.END_DATE,DATASET.TITLE&RESOURCE_CLASS=DATASET&EXPERIMENT.NAME=%&RETURN_TYPE=JSON"
-        p = urllib.request.urlretrieve (url, __products_list_file_name)
-    __products_list=_json.load(open(__products_list_file_name))['data']
+        p = urllib.request.urlretrieve (url, _products_list_file_name)
+    _products_list=_json.load(open(_products_list_file_name))['data']
 
 
 def get_product_list():
-    return __products_list
+    if _products_list==None:
+        _load_product_list()
+    return _products_list
 
-def search_product(name):
-    prog = _re.compile(name)
-    if __products_list==None:
-        __load_product_list()
-    return [element for element in __products_list if prog.search(element['DATASET.DATASET_ID'])!=None]
+def search_dataset(name):
+    try: 
+        prog = _re.compile(name) 
+    except: 
+        raise TypeError("name should be a string")
+    if _products_list==None:
+        _load_product_list()
+    return [element for element in _products_list if prog.search(element['DATASET.DATASET_ID'])!=None]

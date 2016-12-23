@@ -57,7 +57,7 @@ def csa_orbit_img(date):
     ymj = dtime.datetime.strftime(date, "%Y%m%d")
     urllib.urlretrieve (url, 'orbit_%s.png' % (ymj))
 
-    return 'orbit_%s.png' % (ymj)
+    return "orbit_{}.png".format(ymj)
 
 
 def GetHIA(filename):
@@ -113,9 +113,10 @@ def GetPitchAngle(filename):
     return (tpa, E, pitch, df)
 
 
-def get_PP_CIS(spacecraft,time,vars[])
-    ID=spacecraft+"_PP_CIS"
-    filename=_aio.get_product(ID,startdate,stopdate)
+def get_PP_CIS(spacecraft,time,vars=[]):
+    pass
+#    ID=spacecraft+"_PP_CIS"
+#    filename=_aio.get_product(ID,startdate,stopdate)
 
 
 
