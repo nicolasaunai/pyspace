@@ -102,3 +102,58 @@ class WindData:
         
         
 ## Additional instruments might be added 
+
+    def interpolate(self): # put features on the same timescale ( work only for MFI,SWEh1 and SWEk0 for the moment)
+        tmpV = pds.concat ([self.V, pds.DataFrame (columns = self.V.axes [1].values, index = self.B.index)])
+        tmpV = tmpV.groupby (tmpV.index).first ().sort_index ().interpolate (method = "time")
+        tmpDict = {}
+        for elt in self.V.axes [1].values:
+            tmpDict [elt] = tmpV [elt][self.B.index]
+        self.V = pds.DataFrame (tmpDict, index = self.B.index)
+                
+                # Interpolation des series P, Vth et Np
+        tmpVth = pds.concat ([self.Vth, pds.Series (index = self.B.index)])
+        tmpNp = pds.concat ([self.Np, pds.Series (index = self.B.index)])              
+        self.Vth = tmpVth.groupby (tmpVth.index).first ().sort_index ().interpolate (method = "time") [self.B.index]
+        self.Vth.name = "Vth"
+        self.Np = tmpNp.groupby (tmpNp.index).first ().sort_index ().interpolate (method = "time") [self.B.index]
+        self.Np.name = "Np"
+                
+                # Interpolation des séries Np_nl et Na_nl
+        tmpNp_nl = pds.concat ([self.Np_nl, pds.Series (index = self.B.index)])
+        tmpNa_nl = pds.concat ([self.Na_nl, pds.Series (index = self.B.index)])
+        self.Np_nl = tmpNp_nl.groupby (tmpNp_nl.index).first ().sort_index ().interpolate (method = "time") [self.B.index]
+        self.Np_nl.name = "Np_nl"
+        self.Na_nl = tmpNa_nl.groupby (tmpNa_nl.index).first ().sort_index ().interpolate (method = "time") [self.B.index]
+        self.Na_nl.name = "Na_nl"
+                #Interpolation de B
+        self.B = self.B.interpolate (method = "time")
+        
+    def computeExtraFeatures(self): #Add extraFeatures such as |b|, P, beta, B rotation. Additional features might be added here ( RMSBob, Particle ratio, DST)
+        self.B['B2'] = self.B['Bx']**2 + self.B['By']**2 + self.B['Bz']**2
+        self.V['V2'] = self.V['Vx']**2 + self.V['Vy']**2 + self.V['Vz']**2
+        self.B['B'] = pds.Series (np.sqrt (self.B['B2']), index = self.B.index, name = "B")
+        self.V['V'] = pds.Series (np.sqrt (self.V['V2']), index = self.V.index, name = "V")
+        self.C = pds.Series (self.Na_nl / self.Np_nl, name = "C")
+        self.B['Btheta']    = np.arctan2 (np.sqrt(self.B['Bx']**2 + self.B['By']**2), self.B['Bz']) * 180 / np.pi
+        self.B['Bphi']      = (np.arctan2 (self.B['By'], self.B['Bx']) + np.pi) * 180 / np.pi
+        
+        # Set angle value between 0 and 360
+        i = 1
+        while i < self.B.index.size:
+            if self.B['Bphi'][i] - self.B['Bphi'][i - 1] > 300:
+                self.B['Bphi'][i] = self.B['Bphi'][i] - 360
+            elif self.B['Bphi'] [i] - self.B['Bphi'][i - 1] < -300:
+                self.B['Bphi'][i] = self.B['Bphi'][i] + 360
+            if self.B['Btheta'][i] - self.B['Btheta'][i - 1] > 300:
+                self.B['Btheta'][i] = self.B['Btheta'][i] - 360
+            elif self.B['Btheta'] [i] - self.B['Btheta'][i - 1] < -300:
+                self.B['Btheta'][i] = self.B['Btheta'][i] + 360
+            i += 1
+            
+        self.P = pds.Series ((1e3)**2 * self.Vth * self.Vth * 0.5 * constants.m_p * self.Np * 1e6 , index = self.Vth.index, name = "P")
+        tmpP = pds.concat ([self.P, pds.Series (index = self.B.index)])
+        PonBIndex = tmpP.groupby (tmpP.index).first ().sort_index ().interpolate (method = "time") [self.B.index]
+        self.P = PonBIndex
+        self.P.name = "P"
+        self.Beta = pds.Series (2 * PonBIndex * constants.mu_0 / ( (1e-9)**2 * self.B['B2']), name = "Beta")
