@@ -63,3 +63,41 @@ class WindData:
         self.V = pds.DataFrame ({'Vx' : Vx, 'Vy' : Vy, 'Vz' : Vz}, index = swek0TimeArray)
         self.Np = pds.Series (Np, name = 'Np', index = swek0TimeArray)
         self.Vth = pds.Series (Vth, name = 'Vth', index = swek0TimeArray)
+        
+    def loadSWEh1(self,instrument): #Get V, Vth and Np
+        filenames= self.makeFilename(instrument)
+        sweh1TimeArray = np.empty (0, dtype = datetime.datetime)
+        Np_nl           = np.empty (0)
+        Na_nl           = np.empty (0)
+        for files in filenames:
+            sweh1CDF=(pycdf.CDF(files))
+            sweh1TimeArray = np.concatenate ((sweh1TimeArray, sweh1CDF ["Epoch"][:]))       
+            Np_nl  = np.concatenate ((Np_nl, sweh1CDF ['Proton_Np_nonlin'][:]))
+            Na_nl  = np.concatenate ((Na_nl, sweh1CDF ['Alpha_Na_nonlin'][:]))
+        Np_nl [np.where(Np_nl < -1e30)[0]] = np.NaN
+        Na_nl [np.where(Na_nl < -1e30)[0]] = np.NaN
+        Na_nl [np.where(Na_nl > 1e4)[0]] = np.NaN
+        self.Np_nl = pds.Series (Np_nl, name = 'Np_nl', index = sweh1TimeArray)
+        self.Na_nl = pds.Series (Na_nl, name = 'Na_nl', index = sweh1TimeArray)
+        
+    def load3dp(self,instrument): #Energy and electron flux
+        tdpTimeArray = np.empty (0, dtype = datetime.datetime)
+        Energy       = np.empty ((0,15))
+        Flux         = np.empty ((0,15))
+        for files in filenames:
+            tdpCDF = pycdf.CDF(tdpFilename)
+            tdpTimeArray = np.concatenate ((tdpTimeArray, tdpCDF ["Epoch"][:]))
+            Energy = np.concatenate ((Energy, tdpCDF['ENERGY'][:]))
+            Flux   = np.concatenate ((Flux, tdpCDF['FLUX'][:]))
+        tdpColumnsE = []
+        tdpColumnsF = []
+        for i in np.arange (15):
+            tdpColumnsE.append ("Range E " + str (i))
+            tdpColumnsF.append ("Range F " + str (i))
+        self.E = pds.DataFrame (Energy / 1000, index = tdpTimeArray, columns = tdpColumnsE) # Conversion en keV au passage de l'énergie
+        self.F = pds.DataFrame (Flux, index = tdpTimeArray, columns = tdpColumnsF)
+        self.E = self.E.reset_index().drop_duplicates (subset='index').set_index('index')
+        self.F = self.F.reset_index().drop_duplicates (subset='index').set_index('index')
+        
+        
+## Additional instruments might be added 
