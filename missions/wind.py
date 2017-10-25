@@ -81,11 +81,12 @@ class WindData:
         self.Na_nl = pds.Series (Na_nl, name = 'Na_nl', index = sweh1TimeArray)
         
     def load3dp(self,instrument): #Energy and electron flux
+        filenames= self.makeFilename(instrument)
         tdpTimeArray = np.empty (0, dtype = datetime.datetime)
         Energy       = np.empty ((0,15))
         Flux         = np.empty ((0,15))
         for files in filenames:
-            tdpCDF = pycdf.CDF(tdpFilename)
+            tdpCDF = pycdf.CDF(files)
             tdpTimeArray = np.concatenate ((tdpTimeArray, tdpCDF ["Epoch"][:]))
             Energy = np.concatenate ((Energy, tdpCDF['ENERGY'][:]))
             Flux   = np.concatenate ((Flux, tdpCDF['FLUX'][:]))
