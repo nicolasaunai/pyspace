@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 
-import urllib2 as murl
+#import urllib2 as murl
 import urllib
 import os
 import datetime as mdt
@@ -44,7 +44,7 @@ def themis_dl(sc, instrument, l,date,dest_dir=None):
 
     print("Downloading {}".format(url))
 
-    urllib.urlretrieve(url, file_name.split('/')[-1])
+    urllib.request.urlretrieve(url, file_name.split('/')[-1])
 
 #==========================================================
 
@@ -75,7 +75,7 @@ def filename(scname, level, instrument, date):
     # now create the filename
     # an example : thd_l1_state_20080625_v01.cdf
 
-    fn = scname+'_' + level + '_' +instrument+ '_' + date_s + '_v01.cdf'
+    fn = scname+'_' + level + '_' +instrument+ '_' + date_s #+ '_v01.cdf'
 
     path = os.path.join(scname,level,instrument,str(date.year),fn)
 
@@ -89,13 +89,21 @@ def filename(scname, level, instrument, date):
 #-------------------------------------------------------------
 class STATE(object):
 
-    def __init__(self, filename):
-        try:
-            self.filecdf = pycdf.CDF(filename)
-        except:
-            print(filename + ' does not exist')
+    def __init__(self, filename, silent='yes'):
 
-        splitFilename = filename.split('_')
+        versions = ['_v%02d.cdf' % v for v in [1,2,3,4,5,6,7] ]
+
+        for v in versions:
+            filename2 = filename+v
+            try:
+                self.filecdf = pycdf.CDF(filename2)
+                break
+            except:
+                if (silent.lower() == 'no'):
+                    print(v + ' does not exist')
+
+        filename = filename2
+        splitFilename = filename.split('/')[-1].split('_')
         self.sc = splitFilename[0]
         self.level = splitFilename[1]
         self.date = splitFilename[3]
@@ -143,14 +151,21 @@ class FGM(object):
     Despun Spacecraft (DSL), Geocentric Solar Ecliptic (GSE) and Geocentric Solar Magnetospheric (GSM) coordinates.
     The FGS data is given in DSL, GSE, and GSM coordinates. Units are nanotesla.
     """
-    def __init__(self, filename):
-        try:
-            self.filecdf = pycdf.CDF(filename)
-        except:
-            print(filename + ' does not exist')
+    def __init__(self, filename, silent='yes'):
+        versions = ['_v%02d.cdf' % v for v in [1, 2, 3, 4, 5, 6, 7]]
+
+        for v in versions:
+            filename2 = filename + v
+            try:
+                self.filecdf = pycdf.CDF(filename2)
+                break
+            except:
+                if (silent.lower() == 'no'):
+                    print(v + ' does not exist')
 
 
-        splitFilename = filename.split('_')
+        filename = filename2
+        splitFilename = filename.split('/')[-1].split('_')
         self.sc = splitFilename[0]
         self.level = splitFilename[1]
         self.date = splitFilename[3]
@@ -193,13 +208,20 @@ class Moments(object):
     mode = ['esa', 'mom']
     """
 
-    def __init__(self, filename, mode='esa'):
-        try:
-            self.filecdf = pycdf.CDF(filename)
-        except:
-            print(filename + ' does not exist')
+    def __init__(self, filename, mode='esa', silent='yes'):
+        versions = ['_v%02d.cdf' % v for v in [1, 2, 3, 4, 5, 6, 7]]
 
-        splitFilename = filename.split('_')
+        for v in versions:
+            filename2 = filename + v
+            try:
+                self.filecdf = pycdf.CDF(filename2)
+                break
+            except:
+                if (silent.lower() == 'no'):
+                    print(v + ' does not exist')
+
+        filename = filename2
+        splitFilename = filename.split('/')[-1].split('_')
         self.sc = splitFilename[0]
         self.level = splitFilename[1]
         self.date = splitFilename[3]
@@ -291,13 +313,20 @@ class Moments(object):
 
 class Spectrogram(object):
 
-    def __init__(self, filename):
-        try:
-            self.filecdf = pycdf.CDF(filename)
-        except:
-            print(filename + ' does not exist')
+    def __init__(self, filename, silent='yes'):
+        versions = ['_v%02d.cdf' % v for v in [1, 2, 3, 4, 5, 6, 7]]
 
-        splitFilename = filename.split('_')
+        for v in versions:
+            filename2 = filename + v
+            try:
+                self.filecdf = pycdf.CDF(filename2)
+                break
+            except:
+                if (silent.lower() == 'no'):
+                    print(v + ' does not exist')
+
+        filename = filename2
+        splitFilename = filename.split('/')[-1].split('_')
         self.sc = splitFilename[0]
         self.level = splitFilename[1]
         self.date = splitFilename[3]
